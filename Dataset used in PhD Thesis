@@ -1,0 +1,76 @@
+# Run this cell in Google Colab
+!pip install -q pandapower gdown
+
+import os
+import gdown
+import pandas as pd
+import pandapower.networks as pn
+
+# Dictionary of your exact dataset files: (Drive Filename, Drive File ID, Subfolder in MyDrive)
+FILES = {
+    "phoenix_2B_outpatient.csv": ("RefBldgOutPatientNew2004_v1.3_7.1_2B_USA_AZ_PHOENIX.csv", "14GP1pqa0ZcJMd5dnU4tFXpbdjL3wyek0", "Tensorflow folder"),
+    "phoenix_1yeardata.csv":     ("1yeardata.csv", "1WbNdha_YNngDuio37e3olSNd_eDSveMb", "Tensorflow folder"),
+    "alabama_3A_restaurant.csv": ("g0100030-fullservicerestaurant.csv", "1gHZkz9F13TN7RoTE-5eenOxDpdJUUMz7", "Tensorflow folder"),
+    "alabama_3A_weather.csv":    ("G0100030_2018.csv", "1SwdMAH6wRycxt9rzhiHtk8d1OUSFkvQw", "Tensorflow folder"),
+    "helena_6B_cold_hosp.csv":   ("RefBldgHospitalNew2004_v1.3_7.1_6B_USA_MT_HELENA.csv", "1MV7okamrQi3gjQo0ZfsPyX9o9qzuduI9", "Tensorflow folder"),
+    "baltimore_4A_rest.csv":     ("RefBldgFullServiceRestaurantNew2004_v1.3_7.1_4A_USA_MD_BALTIMORE.csv", "13FjLmRpH2_yU9vpHP-bhwHcPOz7cAiEQ", "Tensorflow folder"),
+    "cleaned_wind_data.csv":     ("cleaned wind_data.csv", "1OvDTMFt7g1bWKYBPFBO25ZZHE-65jmof", "Tensorflow folder/Shah Fahad MSEE"),
+    "cleaned_weather_data.csv":  ("cleaned weather_data.csv", "1yOA-FLCdgwGlWBI14lTD4Lsq97dUr10y", "Tensorflow folder/Shah Fahad MSEE"),
+}
+
+os.makedirs("thesis_data", exist_ok=True)
+private_files = []
+
+print("=== STEP 1: Testing Public ('Anyone with the link') Download ===")
+for local_name, (drive_name, fid, folder) in FILES.items():
+    out_path = os.path.join("thesis_data", local_name)
+    url = f"https://drive.google.com/uc?id={fid}"
+    try:
+        res = gdown.download(url, out_path, quiet=True)
+        if res and os.path.exists(out_path) and os.path.getsize(out_path) > 1000:
+            print(f"[PUBLIC - OK]  {local_name} downloaded via direct link ({os.path.getsize(out_path)//1024} KB)")
+        else:
+            private_files.append((local_name, drive_name, fid, folder))
+            print(f"[PRIVATE]      {local_name} is restricted to owner ({drive_name})")
+    except Exception:
+        private_files.append((local_name, drive_name, fid, folder))
+        print(f"[PRIVATE]      {local_name} is restricted to owner ({drive_name})")
+
+# If any files are private, mount Google Drive to load them (and optionally make them public for reviewers)
+MAKE_PUBLIC_FOR_REVIEWER = True  # Set to True so anyone running your Colab link can auto-download all CSVs
+
+if private_files:
+    print("\n=== STEP 2: Mounting Google Drive for Private Files ===")
+    from google.colab import drive, auth
+    from googleapiclient.discovery import build
+    import shutil
+
+    drive.mount("/content/drive")
+    if MAKE_PUBLIC_FOR_REVIEWER:
+        auth.authenticate_user()
+        drive_service = build("drive", "v3")
+
+    for local_name, drive_name, fid, folder in private_files:
+        drive_path = f"/content/drive/MyDrive/{folder}/{drive_name}"
+        out_path = os.path.join("thesis_data", local_name)
+        if os.path.exists(drive_path):
+            shutil.copy(drive_path, out_path)
+            print(f"[COPIED FROM DRIVE] {local_name} ({os.path.getsize(out_path)//1024} KB)")
+        if MAKE_PUBLIC_FOR_REVIEWER:
+            drive_service.permissions().create(
+                fileId=fid,
+                body={"type": "anyone", "role": "reader"},
+                fields="id"
+            ).execute()
+            print(f"   -> Updated sharing of {drive_name} to 'Anyone with the link (Viewer)'!")
+
+print("\n=== STEP 3: Verifying Loaded Datasets & pandapower Grids ===")
+for local_name in FILES:
+    p = os.path.join("thesis_data", local_name)
+    if os.path.exists(p):
+        df = pd.read_csv(p)
+        print(f"Dataset {local_name:26s} -> shape: {str(df.shape):12s} | columns: {list(df.columns[:4])}...")
+
+for name, loader in [("IEEE 14-Bus", pn.case14), ("IEEE 33-Bus Feeder", pn.case33bw), ("IEEE 57-Bus", pn.case57), ("IEEE 118-Bus", pn.case118), ("IEEE 300-Bus", pn.case300)]:
+    net = loader()
+    print(f"Grid    {name:26s} -> {len(net.bus):3d} buses, {len(net.line)+len(net.trafo):3d} branches, total load = {net.load.p_mw.sum():.2f} MW")
