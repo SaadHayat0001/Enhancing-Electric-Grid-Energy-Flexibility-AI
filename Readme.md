@@ -111,7 +111,6 @@ pip install pandapower==2.13.1 torch==2.1.0 torch-geometric==2.4.0 xgboost==2.0.
 1. Install [MATPOWER 8.1](https://matpower.org/download/) in MATLAB R2025a via `install_matpower(1, 1)`.
 2. Open MATLAB, navigate to the `matpower/` directory, and run `fourthpaper`.
 3. A single standalone window with **9 interactive tabs** opens automatically, displaying **Figures 6–10** and **Tables 4–8** from the published *Battery Energy* (2025) paper.
-
 ## 6. Related Publications & Citation
 
 If you use the scripts, models, or dataset pipelines from this repository in your research, please cite our PhD dissertation and the four peer-reviewed journal publications derived from this work:
