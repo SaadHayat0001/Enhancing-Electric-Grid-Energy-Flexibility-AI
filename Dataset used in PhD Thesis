@@ -6,7 +6,7 @@ import gdown
 import pandas as pd
 import pandapower.networks as pn
 
-# Dictionary of your exact dataset files: (Drive Filename, Drive File ID, Subfolder in MyDrive)
+# Dictionary of  exact dataset files: (Drive Filename, Drive File ID, Subfolder in MyDrive)
 FILES = {
     "phoenix_2B_outpatient.csv": ("RefBldgOutPatientNew2004_v1.3_7.1_2B_USA_AZ_PHOENIX.csv", "14GP1pqa0ZcJMd5dnU4tFXpbdjL3wyek0", "Tensorflow folder"),
     "phoenix_1yeardata.csv":     ("1yeardata.csv", "1WbNdha_YNngDuio37e3olSNd_eDSveMb", "Tensorflow folder"),
@@ -36,7 +36,7 @@ for local_name, (drive_name, fid, folder) in FILES.items():
         private_files.append((local_name, drive_name, fid, folder))
         print(f"[PRIVATE]      {local_name} is restricted to owner ({drive_name})")
 
-# If any files are private, mount Google Drive to load them (and optionally make them public for reviewers)
+
 MAKE_PUBLIC_FOR_REVIEWER = True  # Set to True so anyone running your Colab link can auto-download all CSVs
 
 if private_files:
